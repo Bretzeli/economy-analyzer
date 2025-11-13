@@ -1,42 +1,43 @@
 import {InflationData} from "@/types/api-types";
+import {XMLParser} from "fast-xml-parser";
 
 export const parseInflationXml = (xmlString: string): InflationData[] => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    console.log("Parsing inflation XML");
+    const parser = new XMLParser({
+        ignoreAttributes: false,
+        attributeNamePrefix: "@_"
+    });
+    const result = parser.parse(xmlString);
 
-    const observations = xmlDoc.getElementsByTagNameNS("*", "Obs");
     const inflationData: InflationData[] = [];
+    const observations = result?.["message:GenericData"]?.["message:DataSet"]?.["generic:Series"]?.["generic:Obs"];
 
-    for (let i = 0; i < observations.length; i++) {
-        const obs = observations[i];
+    if (!observations) return inflationData;
 
-        // Extract key values
-        const keys = obs.getElementsByTagNameNS("*", "ObsKey")[0];
-        const keyValues = keys.getElementsByTagNameNS("*", "Value");
+    const obsArray = Array.isArray(observations) ? observations : [observations];
+
+    for (const obs of obsArray) {
+        const keyValues = obs["generic:ObsKey"]?.["generic:Value"];
+        const keyArray = Array.isArray(keyValues) ? keyValues : [keyValues];
 
         let timePeriod = "";
         let countryCode = "";
 
-        for (let j = 0; j < keyValues.length; j++) {
-            const key = keyValues[j];
-            const id = key.getAttribute("id");
-            const value = key.getAttribute("value");
-
-            if (id === "TIME_PERIOD") timePeriod = value || "";
-            if (id === "REF_AREA") countryCode = value || "";
+        for (const key of keyArray) {
+            if (key["@_id"] === "TIME_PERIOD") timePeriod = key["@_value"];
+            if (key["@_id"] === "REF_AREA") countryCode = key["@_value"];
         }
 
-        // Extract observation value
-        const obsValue = obs.getElementsByTagNameNS("*", "ObsValue")[0];
-        const inflationRate = parseFloat(obsValue.getAttribute("value") || "0");
+        const inflationRate = parseFloat(obs["generic:ObsValue"]?.["@_value"] || "0");
 
         inflationData.push({
             countryCode,
-            countryName: "", // Country name will need to be resolved separately
+            countryName: "",
             timestamp: timePeriod,
             inflationRate
         });
     }
 
+    console.log("Parsed " + inflationData.length + " inflation records");
     return inflationData;
 }
