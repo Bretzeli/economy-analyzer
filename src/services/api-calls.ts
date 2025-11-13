@@ -3,7 +3,7 @@ import {InflationData} from "@/types/api-types";
 import {wait} from "next/dist/lib/wait";
 
 const RETRY_AFTER: number = 1000;
-const MAX_RETRIES: number = 6;
+const MAX_RETRIES: number = 20;
 const RETRY_MULTIPLIER: number = 2;
 
 export const getOecdInflationData = async (startDate: string = "1914-01", endDate: string = "5000-00") : Promise<InflationData[]> => {

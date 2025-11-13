@@ -14,7 +14,14 @@ export const updateInflationData = async () => {
         console.log(`Updating inflation data for period: ${startDate} - ${incrementedDate}`);
         const newData = await getOecdInflationData(startDate, incrementedDate);
         console.log(`Received ${newData.length} new records.`);
-        newData.forEach(data => addInflationData(data));
+        
+        // Debug: Count unique countries in the received data
+        const uniqueCountries = new Set(newData.map(d => d.countryCode));
+        console.log(`Data contains ${uniqueCountries.size} unique countries:`, Array.from(uniqueCountries).join(", "));
+        
+        // Use Promise.all to await all database operations
+        await Promise.all(newData.map(data => addInflationData(data)));
+        console.log(`Finished saving ${newData.length} records.`);
     }
 }
 
