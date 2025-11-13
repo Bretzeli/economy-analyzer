@@ -8,6 +8,13 @@
       "when": 1762782339390,
       "tag": "0000_useful_iron_monger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1762896212205,
+      "tag": "0001_early_rockslide",
+      "breakpoints": true
     }
   ]
 }
