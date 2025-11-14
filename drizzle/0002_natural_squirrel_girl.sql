@@ -1,0 +1,1 @@
+ALTER TABLE "inflation" ADD CONSTRAINT "inflation_countryCode_timestamp_unique" UNIQUE("countryCode","timestamp");
