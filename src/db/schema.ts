@@ -17,5 +17,9 @@ export const inflationTable = pgTable("inflation", {
 export const incomeTable = pgTable("income", {
     countryCode: varchar({length: 15}).notNull().references(() => countryTable.code),
     timestamp: varchar({length: 10}).notNull(),
-    incomeValue: real().notNull(),
-});
+    ppp_international_dollars: real().notNull(),
+    current_local_currency: real().notNull(),
+    annual_growth_rate: real().notNull(),
+}, (table) => [
+    unique().on(table.countryCode, table.timestamp)
+]);

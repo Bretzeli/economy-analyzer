@@ -1,0 +1,170 @@
+{
+  "id": "84495f8f-b678-4a19-bd2b-9b10816f1e6f",
+  "prevId": "e2a0335e-4497-4bef-bd91-3bb87ffb83fa",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.countries": {
+      "name": "countries",
+      "schema": "",
+      "columns": {
+        "code": {
+          "name": "code",
+          "type": "varchar(15)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hasMonthlyInflationData": {
+          "name": "hasMonthlyInflationData",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.income": {
+      "name": "income",
+      "schema": "",
+      "columns": {
+        "countryCode": {
+          "name": "countryCode",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ppp_international_dollars": {
+          "name": "ppp_international_dollars",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_local_currency": {
+          "name": "current_local_currency",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "annual_growth_rate": {
+          "name": "annual_growth_rate",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "income_countryCode_countries_code_fk": {
+          "name": "income_countryCode_countries_code_fk",
+          "tableFrom": "income",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "countryCode"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "income_countryCode_timestamp_unique": {
+          "name": "income_countryCode_timestamp_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "countryCode",
+            "timestamp"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.inflation": {
+      "name": "inflation",
+      "schema": "",
+      "columns": {
+        "countryCode": {
+          "name": "countryCode",
+          "type": "varchar(15)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inflationValue": {
+          "name": "inflationValue",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "inflation_countryCode_countries_code_fk": {
+          "name": "inflation_countryCode_countries_code_fk",
+          "tableFrom": "inflation",
+          "tableTo": "countries",
+          "columnsFrom": [
+            "countryCode"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "inflation_countryCode_timestamp_unique": {
+          "name": "inflation_countryCode_timestamp_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "countryCode",
+            "timestamp"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
