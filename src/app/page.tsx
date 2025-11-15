@@ -5,18 +5,32 @@ import { Globe2, Map, TrendingUp, Table2, GitCompare } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
 import { Button } from "@/components/shadcn/button"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useEffect, useState, startTransition } from "react"
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
+  // Only set mounted after hydration to avoid mismatch
   useEffect(() => {
-    setMounted(true)
+    startTransition(() => {
+      setMounted(true)
+    })
   }, [])
 
+  // Render placeholder during SSR to match structure
   if (!mounted) {
-    return null
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 right-4 z-50"
+        aria-label="Toggle theme"
+        disabled
+      >
+        <div className="size-5" />
+      </Button>
+    )
   }
 
   return (
