@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback, startTransition } from "react"
+import { useState, useEffect, useMemo, useCallback, startTransition, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Search, TrendingUp, DollarSign, Globe, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
@@ -18,7 +18,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
 import { type CountryInfo, type CountryTimeSeriesData } from "@/services/db-operations"
 import { fetchAllCountries, fetchCountryTimeSeries, fetchAvailableTimestamps, fetchCountryRanking, fetchInflationRankingWithYearlyAverage } from "./actions"
 
-export default function SingleCountryPage() {
+function SingleCountryPageContent() {
   const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null)
@@ -901,5 +901,19 @@ export default function SingleCountryPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function SingleCountryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+        </div>
+      </div>
+    }>
+      <SingleCountryPageContent />
+    </Suspense>
   )
 }
