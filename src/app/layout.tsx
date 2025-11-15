@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { ConditionalNavbar } from "@/components/conditional-navbar";
+import { SidebarProvider, SidebarInset } from "@/components/shadcn/sidebar";
+import { DataManagementSidebar } from "@/components/data-management-sidebar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,8 +37,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ConditionalNavbar />
-          {children}
+          <SidebarProvider defaultOpen={false}>
+            <DataManagementSidebar />
+            <SidebarInset>
+              <ConditionalNavbar />
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>

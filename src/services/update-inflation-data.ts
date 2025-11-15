@@ -9,18 +9,30 @@ import {
 import {updateInflationDataFromOecd} from "@/services/update-oecd-inflation-data";
 import {getInflationDataFromWorldBank} from "@/services/api-calls";
 
-export const updateAllInflationData = async () => {
+export const updateAllInflationData = async (): Promise<{
+    oecdRecordsAdded: number;
+    worldBankRecordsAdded: number;
+    totalRecordsAdded: number;
+    errors: number;
+}> => {
     console.log("=== Starting inflation data update ===");
     
     // Step 1: Update OECD data first
     console.log("\n--- Step 1: Updating OECD inflation data ---");
-    await updateInflationDataFromOecd();
+    const oecdResult = await updateInflationDataFromOecd();
     
     // Step 2: Update World Bank data
     console.log("\n--- Step 2: Updating World Bank inflation data ---");
-    await updateWorldBankInflationData();
+    const worldBankResult = await updateWorldBankInflationData();
     
     console.log("\n=== Inflation data update completed ===");
+    
+    return {
+        oecdRecordsAdded: oecdResult.recordsAdded,
+        worldBankRecordsAdded: worldBankResult.recordsAdded,
+        totalRecordsAdded: oecdResult.recordsAdded + worldBankResult.recordsAdded,
+        errors: oecdResult.errors + worldBankResult.errors,
+    };
 }
 
 export const deleteAndReimportAllInflationData = async () => {
@@ -44,7 +56,12 @@ export const deleteAndReimportAllData = deleteAndReimportAllInflationData;
 // Re-export deleteAllInflationData as a server action
 export const deleteAllInflationData = deleteAllInflationDataInternal;
 
-async function updateWorldBankInflationData() {
+async function updateWorldBankInflationData(): Promise<{
+    recordsRead: number;
+    recordsAdded: number;
+    duplicatesWithOecd: number;
+    errors: number;
+}> {
     console.log("Updating World Bank inflation data...");
     let startDate: string = await getNewestDateForWorldBankInflationData() ?? "1900";
     // Increment year by 1 to get the next year to fetch
@@ -148,5 +165,12 @@ async function updateWorldBankInflationData() {
     console.log(`  - Records added: ${totalRecordsAdded}`);
     console.log(`  - Duplicates with OECD (skipped): ${totalDuplicatesWithOecd}`);
     console.log(`  - Errors: ${totalErrors}`);
+    
+    return {
+        recordsRead: totalRecordsRead,
+        recordsAdded: totalRecordsAdded,
+        duplicatesWithOecd: totalDuplicatesWithOecd,
+        errors: totalErrors,
+    };
 }
 

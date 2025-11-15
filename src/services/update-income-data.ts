@@ -9,12 +9,22 @@ import {
 import {getIncomeDataFromWorldBank} from "@/services/api-calls";
 import {IncomeData} from "@/types/api-types";
 
-export const updateAllIncomeData = async () => {
+export const updateAllIncomeData = async (): Promise<{
+    recordsAdded: number;
+    errors: number;
+    countriesProcessed: number;
+}> => {
     console.log("=== Starting income data update ===");
     
-    await updateWorldBankIncomeData();
+    const result = await updateWorldBankIncomeData();
     
     console.log("\n=== Income data update completed ===");
+    
+    return {
+        recordsAdded: result.recordsAdded,
+        errors: result.errors,
+        countriesProcessed: result.countriesProcessed,
+    };
 }
 
 export const deleteAndReimportAllIncomeData = async () => {
@@ -35,7 +45,13 @@ export const deleteAndReimportAllIncomeData = async () => {
 // Re-export deleteAllIncomeData as a server action
 export const deleteAllIncomeData = deleteAllIncomeDataInternal;
 
-async function updateWorldBankIncomeData() {
+async function updateWorldBankIncomeData(): Promise<{
+    recordsRead: number;
+    recordsAdded: number;
+    duplicates: number;
+    errors: number;
+    countriesProcessed: number;
+}> {
     console.log("Updating World Bank income data...");
     let startDate: string = await getNewestDateForIncomeData() ?? "1900";
     // Increment year by 1 to get the next year to fetch
@@ -198,5 +214,13 @@ async function updateWorldBankIncomeData() {
     console.log(`  - Duplicates (skipped): ${totalDuplicates}`);
     console.log(`  - Errors: ${totalErrors}`);
     console.log(`  - Countries processed: ${countriesProcessed.size}`);
+    
+    return {
+        recordsRead: totalRecordsRead,
+        recordsAdded: totalRecordsAdded,
+        duplicates: totalDuplicates,
+        errors: totalErrors,
+        countriesProcessed: countriesProcessed.size,
+    };
 }
 

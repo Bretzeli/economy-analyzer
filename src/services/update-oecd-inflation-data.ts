@@ -3,7 +3,12 @@
 import {addInflationData, getNewestDateForOecdInflationData, deleteWorldBankDataForCountryYear} from "@/services/db-operations";
 import {getOecdInflationData} from "@/services/api-calls";
 
-export const updateInflationDataFromOecd = async () => {
+export const updateInflationDataFromOecd = async (): Promise<{
+    recordsRead: number;
+    recordsAdded: number;
+    worldBankDeleted: number;
+    errors: number;
+}> => {
     console.log("Updating inflation data...");
     let startDate: string = await getNewestDateForOecdInflationData() ?? "1914-01";
     startDate = incrementDate(startDate);
@@ -111,6 +116,13 @@ export const updateInflationDataFromOecd = async () => {
     
     // Log final summary for all API calls combined
     console.log(`All API calls completed: ${totalRecordsRead} records read, ${totalRecordsAdded} added to DB, ${totalWorldBankDeleted} World Bank entries deleted, ${totalErrors} errors`);
+    
+    return {
+        recordsRead: totalRecordsRead,
+        recordsAdded: totalRecordsAdded,
+        worldBankDeleted: totalWorldBankDeleted,
+        errors: totalErrors,
+    };
 }
 
 function incrementDate(date: string, increment: number = 1): string {

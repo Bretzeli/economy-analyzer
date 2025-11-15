@@ -6,18 +6,30 @@ import {
 import {updateAllInflationData} from "@/services/update-inflation-data";
 import {updateAllIncomeData} from "@/services/update-income-data";
 
-export const updateAllData = async () => {
+export const updateAllData = async (): Promise<{
+    inflationRecordsAdded: number;
+    incomeRecordsAdded: number;
+    totalRecordsAdded: number;
+    errors: number;
+}> => {
     console.log("=== Starting update of all data (inflation + income) ===");
     
     // Step 1: Update inflation data
     console.log("\n--- Step 1: Updating inflation data ---");
-    await updateAllInflationData();
+    const inflationResult = await updateAllInflationData();
     
     // Step 2: Update income data
     console.log("\n--- Step 2: Updating income data ---");
-    await updateAllIncomeData();
+    const incomeResult = await updateAllIncomeData();
     
     console.log("\n=== All data update completed ===");
+    
+    return {
+        inflationRecordsAdded: inflationResult.totalRecordsAdded,
+        incomeRecordsAdded: incomeResult.recordsAdded,
+        totalRecordsAdded: inflationResult.totalRecordsAdded + incomeResult.recordsAdded,
+        errors: inflationResult.errors + incomeResult.errors,
+    };
 }
 
 export const deleteAndReimportAllData = async () => {

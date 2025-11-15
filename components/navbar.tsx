@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, Globe2, TrendingUp, GitCompare, Table2, Moon, Sun } from "lucide-react"
 import { Button } from "@/components/shadcn/button"
+import { SidebarTrigger } from "@/components/shadcn/sidebar"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useEffect, useState, startTransition } from "react"
@@ -79,6 +80,9 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-center w-full">
         <div className="flex items-center gap-2">
+          {/* Sidebar trigger */}
+          <SidebarTrigger />
+          
           {/* Home button */}
           <Link href="/">
             <Button
