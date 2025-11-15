@@ -77,12 +77,8 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        {/* Left spacer */}
-        <div className="flex-1" />
-
-        {/* Centered navigation group */}
-        <div className="flex items-center gap-6">
+      <div className="flex h-14 items-center justify-center w-full">
+        <div className="flex items-center gap-2">
           {/* Home button */}
           <Link href="/">
             <Button
@@ -121,13 +117,10 @@ export function Navbar() {
               )
             })}
           </div>
+
+          {/* Theme toggle */}
+          <ThemeToggle />
         </div>
-
-        {/* Right spacer */}
-        <div className="flex-1" />
-
-        {/* Theme toggle */}
-        <ThemeToggle />
       </div>
     </nav>
   )

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, startTransition, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
-import { Search, TrendingUp, DollarSign, Globe, BarChart3 } from "lucide-react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Search, TrendingUp, DollarSign, Globe, BarChart3, GitCompare } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
 import { Input } from "@/components/shadcn/input"
 import { Slider } from "@/components/shadcn/slider"
@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverAnchor } from "@/components/shadcn/popo
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/shadcn/command"
 import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs"
 import { Badge } from "@/components/shadcn/badge"
+import { Button } from "@/components/shadcn/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select"
 import { Checkbox } from "@/components/shadcn/checkbox"
 import { Label } from "@/components/shadcn/label"
@@ -20,6 +21,7 @@ import { fetchAllCountries, fetchCountryTimeSeries, fetchAvailableTimestamps, fe
 
 function SingleCountryPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null)
   const [countries, setCountries] = useState<CountryInfo[]>([])
@@ -389,12 +391,12 @@ function SingleCountryPageContent() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Header with Search */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center gap-3 pb-2">
             <div className="p-3 rounded-2xl bg-primary/10">
               <TrendingUp className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent pb-1">
               Single Country Analysis
             </h1>
           </div>
@@ -482,8 +484,20 @@ function SingleCountryPageContent() {
             {/* Country Header */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">{selectedCountry.name}</CardTitle>
-                <CardDescription>Economic metrics and trends over time</CardDescription>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">{selectedCountry.name}</CardTitle>
+                    <CardDescription>Economic metrics and trends over time</CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => router.push(`/country-comparison?country=${selectedCountry.code}`)}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <GitCompare className="h-4 w-4" />
+                    Compare Countries
+                  </Button>
+                </div>
               </CardHeader>
             </Card>
 
