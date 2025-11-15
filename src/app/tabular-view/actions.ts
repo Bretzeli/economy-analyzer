@@ -3,7 +3,7 @@
 import { getAllCountries, getAvailableYears, type CountryInfo } from "@/services/db-operations"
 import { db } from "@/db/db"
 import { countryTable, inflationTable, incomeTable } from "@/db/schema"
-import { and, eq, gte, lte, inArray, sql, desc, like } from "drizzle-orm"
+import { and, eq, gte, lte, inArray, sql, desc, like, SQL } from "drizzle-orm"
 import type { Filter } from "@/types/filters"
 
 export type TabularViewRow = {
@@ -21,7 +21,7 @@ export async function fetchAllCountries(): Promise<CountryInfo[]> {
 }
 
 export async function fetchTabularDataCount(filter: Filter): Promise<number> {
-  const conditions: any[] = []
+  const conditions: SQL[] = []
 
   // Country code filter
   if (filter.countryCodes && filter.countryCodes.length > 0) {
@@ -29,7 +29,7 @@ export async function fetchTabularDataCount(filter: Filter): Promise<number> {
   }
 
   // Date range filters for inflation
-  const inflationConditions: any[] = []
+  const inflationConditions: SQL[] = []
   if (filter.startDate) {
     inflationConditions.push(gte(inflationTable.timestamp, filter.startDate))
   }
@@ -49,7 +49,7 @@ export async function fetchTabularDataCount(filter: Filter): Promise<number> {
     )
 
   // Count income data (yearly) that doesn't have matching inflation
-  const incomeConditions: any[] = []
+  const incomeConditions: SQL[] = []
   if (filter.startDate) {
     const year = filter.startDate.length >= 4 ? filter.startDate.substring(0, 4) : filter.startDate
     incomeConditions.push(gte(incomeTable.timestamp, year))
@@ -107,7 +107,7 @@ export async function fetchTabularDataCount(filter: Filter): Promise<number> {
 }
 
 export async function fetchTabularData(filter: Filter): Promise<TabularViewRow[]> {
-  const conditions: any[] = []
+  const conditions: SQL[] = []
 
   // Country code filter
   if (filter.countryCodes && filter.countryCodes.length > 0) {
@@ -115,7 +115,7 @@ export async function fetchTabularData(filter: Filter): Promise<TabularViewRow[]
   }
 
   // Date range filters for inflation
-  const inflationConditions: any[] = []
+  const inflationConditions: SQL[] = []
   if (filter.startDate) {
     inflationConditions.push(gte(inflationTable.timestamp, filter.startDate))
   }
@@ -140,7 +140,7 @@ export async function fetchTabularData(filter: Filter): Promise<TabularViewRow[]
     )
 
   // Get all income data (yearly)
-  const incomeConditions: any[] = []
+  const incomeConditions: SQL[] = []
   if (filter.startDate) {
     // For income, we need to match by year if startDate is monthly
     const year = filter.startDate.length >= 4 ? filter.startDate.substring(0, 4) : filter.startDate
@@ -242,7 +242,6 @@ export async function fetchTabularData(filter: Filter): Promise<TabularViewRow[]
             comparison = a.countryName.localeCompare(b.countryName)
             break
           case 'timestamp':
-          case 'time':
             // Properly compare timestamps: YYYY or YYYY-MM format
             // Convert to comparable format: YYYY-MM-DD (using 01 for month/day if not present)
             const aTimestamp = a.timestamp.length === 4 
@@ -257,25 +256,21 @@ export async function fetchTabularData(filter: Filter): Promise<TabularViewRow[]
                 : b.timestamp
             comparison = aTimestamp.localeCompare(bTimestamp)
             break
-          case 'inflation':
           case 'inflationValue':
             const aInf = a.inflationValue ?? -Infinity
             const bInf = b.inflationValue ?? -Infinity
             comparison = aInf - bInf
             break
-          case 'incomeLCU':
           case 'current_local_currency':
             const aLCU = a.current_local_currency ?? -Infinity
             const bLCU = b.current_local_currency ?? -Infinity
             comparison = aLCU - bLCU
             break
-          case 'incomePPP':
           case 'ppp_international_dollars':
             const aPPP = a.ppp_international_dollars ?? -Infinity
             const bPPP = b.ppp_international_dollars ?? -Infinity
             comparison = aPPP - bPPP
             break
-          case 'growthRate':
           case 'annual_growth_rate':
             const aGrowth = a.annual_growth_rate ?? -Infinity
             const bGrowth = b.annual_growth_rate ?? -Infinity
