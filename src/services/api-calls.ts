@@ -1,5 +1,5 @@
 import {parseInflationXml} from "@/services/xml-to-json";
-import {inflationCsvToJson} from "@/services/csv-to-json";
+import {inflationCsvToJson, incomeCsvToJson} from "@/services/csv-to-json";
 import {InflationData} from "@/types/api-types";
 import {wait} from "next/dist/lib/wait";
 import AdmZip from "adm-zip";
@@ -87,6 +87,75 @@ export const getInflationDataFromWorldBank = async (startDate: string = "1900"):
     
     // Parse CSV to JSON
     const allData = inflationCsvToJson(csvContent);
+    
+    // Filter data based on startDate
+    // startDate is in format "YYYY" (e.g., "1900")
+    const startYear = parseInt(startDate.substring(0, 4));
+    if (isNaN(startYear)) {
+        console.warn(`Invalid startDate format: ${startDate}. Using all data.`);
+        return allData;
+    }
+    
+    // Filter out data before startDate
+    const filteredData = allData.filter(data => {
+        const dataYear = parseInt(data.timestamp.substring(0, 4));
+        return !isNaN(dataYear) && dataYear >= startYear;
+    });
+    
+    return filteredData;
+}
+
+export const getIncomeDataFromWorldBank = async (
+    indicator: 'NY.GNP.PCAP.PP.CD' | 'NY.GNP.PCAP.CN' | 'NY.GNP.PCAP.KD.ZG',
+    startDate: string = "1900"
+): Promise<Array<{countryCode: string; countryName: string; timestamp: string; incomeValue: number}>> => {
+    const url = `https://api.worldbank.org/v2/en/indicator/${indicator}?downloadformat=csv`;
+
+    let response;
+    let retryCount = 0;
+    while(true){
+        response = await fetch(url);
+        if (!response.ok) {
+            if(response.status === 429 && response.statusText === "Too Many Requests"){
+                const waitTime = RETRY_AFTER * RETRY_MULTIPLIER ** retryCount;
+                console.log(`Waiting due to API rate limit: ${waitTime}ms`);
+                if(retryCount >= MAX_RETRIES) throw new Error("Too many retries");
+                await wait(waitTime);
+                retryCount++;
+                continue;
+            }
+            console.error(`Failed to fetch data: ${response.statusText}`);
+            console.error(response);
+            console.error(response.headers);
+            console.error(response.status);
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
+        } else{
+            retryCount = 0;
+            break;
+        }
+    }
+
+    // Get the ZIP file as an ArrayBuffer
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = new AdmZip(Buffer.from(arrayBuffer));
+    
+    // Get all entries in the ZIP file
+    const zipEntries = zip.getEntries();
+    
+    // Find the CSV file that starts with "API"
+    const apiCsvEntry = zipEntries.find((entry: { entryName: string }) => 
+        entry.entryName.startsWith("API") && entry.entryName.endsWith(".csv")
+    );
+    
+    if (!apiCsvEntry) {
+        throw new Error("Could not find API CSV file in the downloaded ZIP");
+    }
+    
+    // Extract and read the CSV content
+    const csvContent = apiCsvEntry.getData().toString('utf-8');
+    
+    // Parse CSV to JSON
+    const allData = incomeCsvToJson(csvContent);
     
     // Filter data based on startDate
     // startDate is in format "YYYY" (e.g., "1900")

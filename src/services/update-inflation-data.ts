@@ -4,7 +4,7 @@ import {
     getNewestDateForWorldBankInflationData,
     addInflationDataWithMonthlyFlag,
     hasOecdDataForCountryYear,
-    deleteAllData as deleteAllDataInternal
+    deleteAllInflationData as deleteAllInflationDataInternal
 } from "@/services/db-operations";
 import {updateInflationDataFromOecd} from "@/services/update-oecd-inflation-data";
 import {getInflationDataFromWorldBank} from "@/services/api-calls";
@@ -23,23 +23,26 @@ export const updateAllInflationData = async () => {
     console.log("\n=== Inflation data update completed ===");
 }
 
-export const deleteAndReimportAllData = async () => {
-    console.log("=== Starting delete and re-import of all data ===");
+export const deleteAndReimportAllInflationData = async () => {
+    console.log("=== Starting delete and re-import of all inflation data ===");
     
-    // Step 1: Delete all existing data
-    console.log("\n--- Step 1: Deleting all existing data ---");
-    const deleteResult = await deleteAllDataInternal();
-    console.log(`Deleted ${deleteResult.inflationDeleted} inflation records and ${deleteResult.countriesDeleted} country records`);
+    // Step 1: Delete all existing inflation data
+    console.log("\n--- Step 1: Deleting all existing inflation data ---");
+    const inflationDeleted = await deleteAllInflationDataInternal();
+    console.log(`Deleted ${inflationDeleted} inflation records`);
     
-    // Step 2: Re-import all data from scratch
-    console.log("\n--- Step 2: Re-importing all data from scratch ---");
+    // Step 2: Re-import all inflation data from scratch
+    console.log("\n--- Step 2: Re-importing all inflation data from scratch ---");
     await updateAllInflationData();
     
     console.log("\n=== Delete and re-import completed ===");
 }
 
-// Re-export deleteAllData as a server action
-export const deleteAllData = deleteAllDataInternal;
+// Keep the old function name for backward compatibility, but it now only handles inflation
+export const deleteAndReimportAllData = deleteAndReimportAllInflationData;
+
+// Re-export deleteAllInflationData as a server action
+export const deleteAllInflationData = deleteAllInflationDataInternal;
 
 async function updateWorldBankInflationData() {
     console.log("Updating World Bank inflation data...");

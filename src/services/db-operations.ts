@@ -1,6 +1,6 @@
 import {db} from "@/db/db";
-import {countryTable, inflationTable} from "@/db/schema";
-import {InflationData} from "@/types/api-types";
+import {countryTable, inflationTable, incomeTable} from "@/db/schema";
+import {InflationData, IncomeData} from "@/types/api-types";
 import {SQL, desc, sql} from "drizzle-orm";
 import {Filter} from "@/types/filters";
 import {and, eq, gte, lte, like} from "drizzle-orm/sql/expressions/conditions";
@@ -120,12 +120,13 @@ export const deleteAllCountryData = async (): Promise<number> => {
     }, "deleteAllCountryData");
 }
 
-export const deleteAllData = async (): Promise<{ inflationDeleted: number; countriesDeleted: number }> => {
-    console.log("Deleting all inflation and country data...");
+export const deleteAllData = async (): Promise<{ inflationDeleted: number; incomeDeleted: number; countriesDeleted: number }> => {
+    console.log("Deleting all inflation, income and country data...");
     const inflationDeleted = await deleteAllInflationData();
+    const incomeDeleted = await deleteAllIncomeData();
     const countriesDeleted = await deleteAllCountryData();
-    console.log(`Deleted ${inflationDeleted} inflation records and ${countriesDeleted} country records`);
-    return { inflationDeleted, countriesDeleted };
+    console.log(`Deleted ${inflationDeleted} inflation records, ${incomeDeleted} income records and ${countriesDeleted} country records`);
+    return { inflationDeleted, incomeDeleted, countriesDeleted };
 }
 
 export const readInflationData = async (filter: Filter) : Promise<InflationData[]> => {
@@ -183,6 +184,104 @@ export const getNewestDateForWorldBankInflationData = async (): Promise<string |
             .limit(1)
             .then(result => result[0]?.timestamp || null), 
         "getNewestDateForWorldBankInflationData");
+}
+
+export const addIncomeData = async (data: IncomeData) => {
+    // Ensure country exists
+    await addCountryWithMonthlyFlag(data.countryCode, data.countryName, false);
+    
+    // Only insert if at least one income value is provided
+    if (data.ppp_international_dollars === undefined && 
+        data.current_local_currency === undefined && 
+        data.annual_growth_rate === undefined) {
+        console.warn(`Skipping income data for ${data.countryCode} at ${data.timestamp}: no income values provided`);
+        return;
+    }
+    
+    await attemptDBCall(async () => {
+        // Check if record exists
+        const existing = await db.select()
+            .from(incomeTable)
+            .where(
+                and(
+                    eq(incomeTable.countryCode, data.countryCode),
+                    eq(incomeTable.timestamp, data.timestamp)
+                )
+            )
+            .limit(1);
+        
+        if (existing.length > 0) {
+            // Update existing record, only updating fields that are provided
+            const updateValues: {
+                ppp_international_dollars?: number;
+                current_local_currency?: number;
+                annual_growth_rate?: number;
+            } = {};
+            if (data.ppp_international_dollars !== undefined) {
+                updateValues.ppp_international_dollars = data.ppp_international_dollars;
+            }
+            if (data.current_local_currency !== undefined) {
+                updateValues.current_local_currency = data.current_local_currency;
+            }
+            if (data.annual_growth_rate !== undefined) {
+                updateValues.annual_growth_rate = data.annual_growth_rate;
+            }
+            
+            if (Object.keys(updateValues).length > 0) {
+                await db.update(incomeTable)
+                    .set(updateValues)
+                    .where(
+                        and(
+                            eq(incomeTable.countryCode, data.countryCode),
+                            eq(incomeTable.timestamp, data.timestamp)
+                        )
+                    )
+                    .execute();
+            }
+        } else {
+            // Insert new record
+            await db.insert(incomeTable).values({
+                countryCode: data.countryCode,
+                timestamp: data.timestamp,
+                ppp_international_dollars: data.ppp_international_dollars ?? 0,
+                current_local_currency: data.current_local_currency ?? 0,
+                annual_growth_rate: data.annual_growth_rate ?? 0,
+            }).execute();
+        }
+    }, "addIncomeData for data: " + JSON.stringify(data));
+}
+
+export const deleteAllIncomeData = async (): Promise<number> => {
+    return attemptDBCall<number>(async () => {
+        const result = await db.delete(incomeTable).returning();
+        return result.length;
+    }, "deleteAllIncomeData");
+}
+
+export const getNewestDateForIncomeData = async (): Promise<string | null> => {
+    return attemptDBCall<string | null>(async () => 
+        db.select()
+            .from(incomeTable)
+            .where(sql`LENGTH(${incomeTable.timestamp}) = 4 AND ${incomeTable.timestamp} ~ '^[0-9]{4}$'`)
+            .orderBy(desc(incomeTable.timestamp))
+            .limit(1)
+            .then(result => result[0]?.timestamp || null), 
+        "getNewestDateForIncomeData");
+}
+
+export const hasIncomeDataForCountryYear = async (countryCode: string, year: string): Promise<boolean> => {
+    return attemptDBCall<boolean>(async () => {
+        const result = await db.select()
+            .from(incomeTable)
+            .where(
+                and(
+                    eq(incomeTable.countryCode, countryCode),
+                    eq(incomeTable.timestamp, year)
+                )
+            )
+            .limit(1);
+        return result.length > 0;
+    }, "hasIncomeDataForCountryYear for country: " + countryCode + " and year: " + year);
 }
 
 async function attemptDBCall<T>(dbCall: () => Promise<T>, description: string) : Promise<T> {
