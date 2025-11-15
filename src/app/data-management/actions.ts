@@ -18,7 +18,7 @@ import {
 export type DataType = "all" | "inflation" | "income";
 export type ActionType = "update" | "delete" | "delete-reimport";
 
-interface ActionResult {
+export interface ActionResult {
     success: boolean;
     message: string;
     details?: {
