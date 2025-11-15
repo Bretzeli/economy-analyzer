@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect, useMemo, startTransition } from "react"
+import { useState, useEffect, useMemo, useCallback, startTransition } from "react"
 import { Search, TrendingUp, DollarSign, Globe, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
 import { Input } from "@/components/shadcn/input"
+import { Slider } from "@/components/shadcn/slider"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/shadcn/chart"
 import { Popover, PopoverContent, PopoverAnchor } from "@/components/shadcn/popover"
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/shadcn/command"
@@ -26,6 +27,7 @@ export default function SingleCountryPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("")
   const [ignoreMonth, setIgnoreMonth] = useState(false)
   const [useLCU, setUseLCU] = useState(false)
+  const [yearRange, setYearRange] = useState<[number, number]>([0, 0])
   const [ranking, setRanking] = useState<Awaited<ReturnType<typeof fetchCountryRanking>>>(null)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -148,41 +150,92 @@ export default function SingleCountryPage() {
     setIsSearchOpen(false)
   }
 
-  // Prepare chart data
-  const inflationChartData = timeSeriesData
-    .filter(d => d.inflationValue !== null)
-    .map(d => ({
-      timestamp: d.timestamp,
-      value: d.inflationValue!,
-    }))
+  // Get sorted years as numbers for the range slider
+  const availableYearsSorted = useMemo(() => {
+    const years = new Set<number>()
+    timeSeriesData.forEach(d => {
+      if (d.timestamp.length >= 4) {
+        const year = parseInt(d.timestamp.substring(0, 4))
+        if (!isNaN(year)) {
+          years.add(year)
+        }
+      }
+    })
+    return Array.from(years).sort((a, b) => a - b) // Oldest to newest
+  }, [timeSeriesData])
 
-  const incomePPPChartData = timeSeriesData
-    .filter(d => d.ppp_international_dollars !== null)
-    .map(d => ({
-      timestamp: d.timestamp,
-      value: d.ppp_international_dollars!,
-    }))
+  // Initialize year range when data is loaded
+  useEffect(() => {
+    if (availableYearsSorted.length > 0 && yearRange[0] === 0 && yearRange[1] === 0) {
+      startTransition(() => {
+        setYearRange([availableYearsSorted[0], availableYearsSorted[availableYearsSorted.length - 1]])
+      })
+    }
+  }, [availableYearsSorted, yearRange])
 
-  const incomeLCUChartData = timeSeriesData
-    .filter(d => d.current_local_currency !== null)
-    .map(d => ({
-      timestamp: d.timestamp,
-      value: d.current_local_currency!,
-    }))
+  // Helper to extract year from timestamp
+  const getYearFromTimestamp = useCallback((timestamp: string): number => {
+    if (timestamp.length >= 4) {
+      const year = parseInt(timestamp.substring(0, 4))
+      return isNaN(year) ? 0 : year
+    }
+    return 0
+  }, [])
 
-  const growthRateChartData = timeSeriesData
-    .filter(d => d.annual_growth_rate !== null)
-    .map(d => ({
-      timestamp: d.timestamp,
-      value: d.annual_growth_rate!,
-    }))
+  // Filter data by year range
+  const filterByYearRange = useCallback(<T extends { timestamp: string }>(data: T[]): T[] => {
+    return data.filter(d => {
+      const year = getYearFromTimestamp(d.timestamp)
+      return year >= yearRange[0] && year <= yearRange[1]
+    })
+  }, [yearRange, getYearFromTimestamp])
+
+  // Prepare chart data (filtered by year range)
+  const inflationChartData = useMemo(() => {
+    return filterByYearRange(timeSeriesData)
+      .filter(d => d.inflationValue !== null)
+      .map(d => ({
+        timestamp: d.timestamp,
+        value: d.inflationValue!,
+      }))
+  }, [timeSeriesData, filterByYearRange])
+
+  const incomePPPChartData = useMemo(() => {
+    return filterByYearRange(timeSeriesData)
+      .filter(d => d.ppp_international_dollars !== null)
+      .map(d => ({
+        timestamp: d.timestamp,
+        value: d.ppp_international_dollars!,
+      }))
+  }, [timeSeriesData, filterByYearRange])
+
+  const incomeLCUChartData = useMemo(() => {
+    return filterByYearRange(timeSeriesData)
+      .filter(d => d.current_local_currency !== null)
+      .map(d => ({
+        timestamp: d.timestamp,
+        value: d.current_local_currency!,
+      }))
+  }, [timeSeriesData, filterByYearRange])
+
+  const growthRateChartData = useMemo(() => {
+    return filterByYearRange(timeSeriesData)
+      .filter(d => d.annual_growth_rate !== null)
+      .map(d => ({
+        timestamp: d.timestamp,
+        value: d.annual_growth_rate!,
+      }))
+  }, [timeSeriesData, filterByYearRange])
 
   // For difference chart, match by year since income growth is yearly but inflation might be monthly
   const differenceChartData = useMemo(() => {
+    // Filter by year range first
+    const filteredData = filterByYearRange(timeSeriesData)
+    
     // Group data by year
     const dataByYear = new Map<string, { growthRate: number | null; inflationValues: number[] }>()
     
-    timeSeriesData.forEach(d => {
+    filteredData.forEach(d => {
       // Extract year from timestamp (handles both "2023" and "2023-07" formats)
       const year = d.timestamp.length >= 4 ? d.timestamp.substring(0, 4) : d.timestamp
       
@@ -214,7 +267,7 @@ export default function SingleCountryPage() {
     })
     
     return result.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-  }, [timeSeriesData])
+  }, [timeSeriesData, filterByYearRange])
 
   const chartConfigs = {
     inflation: {
@@ -252,6 +305,12 @@ export default function SingleCountryPage() {
   const formatTimestamp = (timestamp: string) => {
     if (timestamp.length === 4) return timestamp
     if (timestamp.length === 7) return timestamp // YYYY-MM format
+    return timestamp
+  }
+
+  const formatTimestampYearOnly = (timestamp: string) => {
+    // Extract year from timestamp (handles both YYYY and YYYY-MM formats)
+    if (timestamp.length >= 4) return timestamp.substring(0, 4)
     return timestamp
   }
 
@@ -574,6 +633,36 @@ export default function SingleCountryPage() {
               </div>
             )}
 
+            {/* Year Range Slider */}
+            {availableYearsSorted.length > 0 && yearRange[0] > 0 && yearRange[1] > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Time Range</CardTitle>
+                  <CardDescription>Select the year range to display in all charts</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Year Range</span>
+                      <span className="font-medium">{yearRange[0]} - {yearRange[1]}</span>
+                    </div>
+                    <Slider
+                      value={yearRange}
+                      onValueChange={(values) => setYearRange([values[0], values[1]])}
+                      min={availableYearsSorted[0]}
+                      max={availableYearsSorted[availableYearsSorted.length - 1]}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{availableYearsSorted[0]}</span>
+                      <span>{availableYearsSorted[availableYearsSorted.length - 1]}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Time Series Charts */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Inflation Chart */}
@@ -592,7 +681,7 @@ export default function SingleCountryPage() {
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                         <XAxis 
                           dataKey="timestamp" 
-                          tickFormatter={formatTimestamp}
+                          tickFormatter={formatTimestampYearOnly}
                           className="text-xs"
                         />
                         <YAxis className="text-xs" />
