@@ -1001,3 +1001,253 @@ export const getInflationRankingWithYearlyAverage = async (
     }, `getInflationRankingWithYearlyAverage for country: ${countryCode}, year: ${year}`);
 };
 
+// Get world map data for a specific year
+export type WorldMapData = {
+    countryCode: string;
+    countryName: string;
+    inflationValue: number | null;
+    ppp_international_dollars: number | null;
+    current_local_currency: number | null;
+    annual_growth_rate: number | null;
+    difference: number | null; // annual_growth_rate - inflationValue
+};
+
+export const getWorldMapData = async (year: string): Promise<WorldMapData[]> => {
+    return attemptDBCall<WorldMapData[]>(async () => {
+        // Get all income data for the year
+        const incomeData = await db
+            .select({
+                countryCode: incomeTable.countryCode,
+                countryName: countryTable.name,
+                ppp_international_dollars: incomeTable.ppp_international_dollars,
+                current_local_currency: incomeTable.current_local_currency,
+                annual_growth_rate: incomeTable.annual_growth_rate,
+            })
+            .from(incomeTable)
+            .innerJoin(countryTable, eq(countryTable.code, incomeTable.countryCode))
+            .where(eq(incomeTable.timestamp, year));
+
+        // Get all inflation data for the year (including monthly data for averaging)
+        const allInflationData = await db
+            .select({
+                countryCode: inflationTable.countryCode,
+                timestamp: inflationTable.timestamp,
+                inflationValue: inflationTable.inflationValue,
+            })
+            .from(inflationTable)
+            .where(like(inflationTable.timestamp, `${year}%`));
+
+        // Group inflation by country and calculate averages for monthly data
+        const inflationMap = new Map<string, number>();
+        const countryInflationMap = new Map<string, number[]>();
+        
+        allInflationData.forEach(item => {
+            const isMonthly = item.timestamp.length === 7; // YYYY-MM format
+            const isYearly = item.timestamp.length === 4 && item.timestamp === year; // YYYY format
+            
+            if (!countryInflationMap.has(item.countryCode)) {
+                countryInflationMap.set(item.countryCode, []);
+            }
+            
+            if (isMonthly) {
+                countryInflationMap.get(item.countryCode)!.push(item.inflationValue);
+            } else if (isYearly) {
+                // For yearly data, use it directly
+                inflationMap.set(item.countryCode, item.inflationValue);
+            }
+        });
+
+        // Calculate averages for countries with monthly data
+        countryInflationMap.forEach((values, code) => {
+            if (values.length > 0 && !inflationMap.has(code)) {
+                const avgValue = values.reduce((sum, val) => sum + val, 0) / values.length;
+                inflationMap.set(code, avgValue);
+            }
+        });
+
+        // Create a map of all countries
+        const allCountries = await db
+            .select({
+                code: countryTable.code,
+                name: countryTable.name,
+            })
+            .from(countryTable);
+
+        // Combine data
+        const result: WorldMapData[] = allCountries.map(country => {
+            const income = incomeData.find(d => d.countryCode === country.code);
+            const inflation = inflationMap.get(country.code) ?? null;
+            const growthRate = income?.annual_growth_rate ?? null;
+            
+            return {
+                countryCode: country.code,
+                countryName: country.name,
+                inflationValue: inflation,
+                ppp_international_dollars: income?.ppp_international_dollars ?? null,
+                current_local_currency: income?.current_local_currency ?? null,
+                annual_growth_rate: growthRate,
+                difference: growthRate !== null && inflation !== null ? growthRate - inflation : null,
+            };
+        });
+
+        return result;
+    }, `getWorldMapData for year: ${year}`);
+};
+
+// Get available years for world map (from both income and inflation data)
+export const getAvailableYears = async (): Promise<string[]> => {
+    return attemptDBCall<string[]>(async () => {
+        const incomeYears = await db
+            .selectDistinct({ timestamp: incomeTable.timestamp })
+            .from(incomeTable)
+            .where(sql`LENGTH(${incomeTable.timestamp}) = 4 AND ${incomeTable.timestamp} ~ '^[0-9]{4}$'`)
+            .orderBy(desc(incomeTable.timestamp));
+
+        const inflationYears = await db
+            .selectDistinct({ timestamp: inflationTable.timestamp })
+            .from(inflationTable)
+            .where(
+                sql`(LENGTH(${inflationTable.timestamp}) = 4 AND ${inflationTable.timestamp} ~ '^[0-9]{4}$') OR (LENGTH(${inflationTable.timestamp}) = 7 AND ${inflationTable.timestamp} ~ '^[0-9]{4}-[0-9]{2}$')`
+            )
+            .orderBy(desc(inflationTable.timestamp));
+
+        // Extract years from timestamps
+        const years = new Set<string>();
+        incomeYears.forEach(item => {
+            if (item.timestamp.length === 4) {
+                years.add(item.timestamp);
+            }
+        });
+        inflationYears.forEach(item => {
+            const year = item.timestamp.length === 4 ? item.timestamp : item.timestamp.substring(0, 4);
+            years.add(year);
+        });
+
+        return Array.from(years).sort().reverse(); // Newest first
+    }, "getAvailableYears");
+};
+
+// Get global min/max values across all years for color scale
+// Uses 85% range (7.5th to 92.5th percentile) to exclude outliers
+export type GlobalValueBounds = {
+    inflation: { min: number; max: number; actualMin: number; actualMax: number } | null;
+    ppp: { min: number; max: number; actualMin: number; actualMax: number } | null;
+    lcu: { min: number; max: number; actualMin: number; actualMax: number } | null;
+    growth: { min: number; max: number; actualMin: number; actualMax: number } | null;
+    difference: { min: number; max: number; actualMin: number; actualMax: number } | null;
+};
+
+export const getGlobalValueBounds = async (): Promise<GlobalValueBounds> => {
+    return attemptDBCall<GlobalValueBounds>(async () => {
+        // Get all inflation values (including monthly, we'll average by year)
+        const allInflationData = await db
+            .select({
+                countryCode: inflationTable.countryCode,
+                timestamp: inflationTable.timestamp,
+                inflationValue: inflationTable.inflationValue,
+            })
+            .from(inflationTable);
+
+        // Get all income values
+        const allIncomeData = await db
+            .select({
+                countryCode: incomeTable.countryCode,
+                timestamp: incomeTable.timestamp,
+                ppp_international_dollars: incomeTable.ppp_international_dollars,
+                current_local_currency: incomeTable.current_local_currency,
+                annual_growth_rate: incomeTable.annual_growth_rate,
+            })
+            .from(incomeTable);
+
+        // Process inflation: group by country and year, calculate yearly averages
+        const inflationByYear = new Map<string, number[]>();
+        allInflationData.forEach(item => {
+            const year = item.timestamp.length >= 4 ? item.timestamp.substring(0, 4) : item.timestamp;
+            const key = `${item.countryCode}-${year}`;
+            if (!inflationByYear.has(key)) {
+                inflationByYear.set(key, []);
+            }
+            inflationByYear.get(key)!.push(item.inflationValue);
+        });
+
+        const inflationValues: number[] = [];
+        inflationByYear.forEach(values => {
+            const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+            inflationValues.push(avg);
+        });
+
+        // Process income data
+        const pppValues: number[] = [];
+        const lcuValues: number[] = [];
+        const growthValues: number[] = [];
+        const differenceValues: number[] = [];
+
+        // Group income by country and year
+        const incomeByYear = new Map<string, {
+            ppp: number | null;
+            lcu: number | null;
+            growth: number | null;
+            inflation: number | null;
+        }>();
+
+        allIncomeData.forEach(item => {
+            const year = item.timestamp.length >= 4 ? item.timestamp.substring(0, 4) : item.timestamp;
+            const key = `${item.countryCode}-${year}`;
+            if (!incomeByYear.has(key)) {
+                incomeByYear.set(key, { ppp: null, lcu: null, growth: null, inflation: null });
+            }
+            const data = incomeByYear.get(key)!;
+            if (item.ppp_international_dollars !== null) data.ppp = item.ppp_international_dollars;
+            if (item.current_local_currency !== null) data.lcu = item.current_local_currency;
+            if (item.annual_growth_rate !== null) data.growth = item.annual_growth_rate;
+        });
+
+        // Match inflation with income by country and year for difference calculation
+        incomeByYear.forEach((incomeData, key) => {
+            const [countryCode, year] = key.split('-');
+            const inflationKey = `${countryCode}-${year}`;
+            const inflationAvg = inflationByYear.has(inflationKey) 
+                ? inflationByYear.get(inflationKey)!.reduce((sum, val) => sum + val, 0) / inflationByYear.get(inflationKey)!.length
+                : null;
+
+            if (incomeData.ppp !== null) pppValues.push(incomeData.ppp);
+            if (incomeData.lcu !== null) lcuValues.push(incomeData.lcu);
+            if (incomeData.growth !== null) {
+                growthValues.push(incomeData.growth);
+                // Calculate difference if we have inflation
+                if (inflationAvg !== null) {
+                    differenceValues.push(incomeData.growth - inflationAvg);
+                }
+            }
+        });
+
+        // Helper function to calculate percentile bounds (85% range = 7.5th to 92.5th percentile)
+        const getPercentileBounds = (values: number[]): { min: number; max: number; actualMin: number; actualMax: number } => {
+            if (values.length === 0) {
+                return { min: 0, max: 0, actualMin: 0, actualMax: 0 };
+            }
+            const sorted = [...values].sort((a, b) => a - b);
+            const actualMin = sorted[0];
+            const actualMax = sorted[sorted.length - 1];
+            // 7.5th percentile (bottom 7.5% excluded)
+            const minIndex = Math.floor(sorted.length * 0.075);
+            // 92.5th percentile (top 7.5% excluded)
+            const maxIndex = Math.ceil(sorted.length * 0.925) - 1;
+            return {
+                min: sorted[minIndex],
+                max: sorted[maxIndex],
+                actualMin,
+                actualMax
+            };
+        };
+
+        return {
+            inflation: inflationValues.length > 0 ? getPercentileBounds(inflationValues) : null,
+            ppp: pppValues.length > 0 ? getPercentileBounds(pppValues) : null,
+            lcu: lcuValues.length > 0 ? getPercentileBounds(lcuValues) : null,
+            growth: growthValues.length > 0 ? getPercentileBounds(growthValues) : null,
+            difference: differenceValues.length > 0 ? getPercentileBounds(differenceValues) : null,
+        };
+    }, "getGlobalValueBounds");
+};
+

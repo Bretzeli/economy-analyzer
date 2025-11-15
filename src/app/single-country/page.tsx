@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback, startTransition } from "react"
+import { useSearchParams } from "next/navigation"
 import { Search, TrendingUp, DollarSign, Globe, BarChart3 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
 import { Input } from "@/components/shadcn/input"
@@ -18,6 +19,7 @@ import { type CountryInfo, type CountryTimeSeriesData } from "@/services/db-oper
 import { fetchAllCountries, fetchCountryTimeSeries, fetchAvailableTimestamps, fetchCountryRanking, fetchInflationRankingWithYearlyAverage } from "./actions"
 
 export default function SingleCountryPage() {
+  const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCountry, setSelectedCountry] = useState<CountryInfo | null>(null)
   const [countries, setCountries] = useState<CountryInfo[]>([])
@@ -31,11 +33,42 @@ export default function SingleCountryPage() {
   const [ranking, setRanking] = useState<Awaited<ReturnType<typeof fetchCountryRanking>>>(null)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [initializedFromUrl, setInitializedFromUrl] = useState(false)
 
   // Load countries on mount
   useEffect(() => {
     fetchAllCountries().then(setCountries)
   }, [])
+
+  // Initialize from URL parameters
+  useEffect(() => {
+    if (countries.length > 0 && !initializedFromUrl) {
+      const countryCode = searchParams.get("country")
+      const year = searchParams.get("year")
+      const ignoreMonthParam = searchParams.get("ignoreMonth")
+
+      startTransition(() => {
+        if (countryCode) {
+          // Find the country by code
+          const country = countries.find(c => c.code === countryCode)
+          if (country) {
+            setSelectedCountry(country)
+            setSearchQuery(country.name)
+          }
+        }
+
+        if (year) {
+          setSelectedYear(year)
+        }
+
+        if (ignoreMonthParam === "true") {
+          setIgnoreMonth(true)
+        }
+
+        setInitializedFromUrl(true)
+      })
+    }
+  }, [countries, searchParams, initializedFromUrl])
 
   // Filter countries based on search query
   const filteredCountries = useMemo(() => {
@@ -75,8 +108,9 @@ export default function SingleCountryPage() {
         startTransition(() => {
           setTimeSeriesData(timeSeries)
           setAvailableTimestamps(timestamps)
-          // Set default to newest year and month
-          if (timestamps.length > 0) {
+          // Set default to newest year and month only if we haven't initialized from URL params
+          // We check if initializedFromUrl is true - if it is, we assume year was set from URL
+          if (timestamps.length > 0 && !initializedFromUrl) {
             const newest = timestamps[0]
             const year = newest.length >= 4 ? newest.substring(0, 4) : newest
             const month = newest.length === 7 ? newest.substring(5, 7) : ""
@@ -98,7 +132,7 @@ export default function SingleCountryPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedCountry, useLCU])
+  }, [selectedCountry, useLCU, initializedFromUrl])
 
   // Update ranking when year, month, ignoreMonth, or LCU preference changes
   useEffect(() => {
