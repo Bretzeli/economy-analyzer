@@ -1,37 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Economy Analyzer
+**Portfolio Project for Web Intelligence WS 2025/26**
+
+A comprehensive web application for analyzing and visualizing global economic data, specifically focusing on inflation and income metrics across countries and years.
+
+🌐 **Live Application**: [www.webintelligence.florianwetzel.dev](https://www.webintelligence.florianwetzel.dev)
+
+## Overview
+
+Economy Analyzer is an interactive data visualization platform that enables users to explore, compare, and analyze economic indicators worldwide. The application provides multiple views and tools for understanding inflation trends and income data across different countries and time periods.
+
+## Features
+
+- **World Map Visualization**: Interactive world map displaying economic data with color-coded visualizations
+- **Single Country Analysis**: Detailed views of economic metrics and trends for individual countries
+- **Country Comparison**: Side-by-side comparison of economic indicators across multiple countries
+- **Tabular View**: Comprehensive data table with filtering, sorting, and export capabilities
+
+## Data Sources
+
+### Income Data
+- **Source**: World Bank
+- **Indicators**: 
+  - GNI per capita (PPP)
+  - GNI per capita (current LCU)
+  - GNI per capita growth (annual %)
+
+### Inflation Data
+The application uses two complementary data sources for inflation to maximize both coverage and data frequency:
+
+- **OECD**: Provides higher data frequency (monthly data) for OECD member countries and partners. While covering fewer countries overall, OECD data offers more granular temporal resolution for available countries.
+
+- **World Bank**: Provides broader country coverage with annual inflation data. The World Bank source includes more countries globally, making it ideal for comprehensive cross-country analysis.
+
+This dual-source approach ensures users have access to:
+- More countries (via World Bank)
+- Higher data frequency per country where available (via OECD)
+
+## Tech Stack (not exhaustive)
+
+### Frontend
+- **Next.js 16.0.1** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first CSS framework
+- **React Simple Maps** - Interactive map components
+- **Shadcn UI** - UI component library built on Radix UI
+
+### Database
+- **Drizzle ORM** - TypeScript ORM for database operations
+- **Neon Database** - Serverless PostgreSQL database
+
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js (v18 or higher recommended)
+- npm, yarn, pnpm, or bun
+- PostgreSQL database (Neon or local instance)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd economy-analyzer
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+3. Set up environment variables:
+Create a `.env` file in the root directory and configure your database connection:
+```env
+DATABASE_URL=your_database_connection_string
+ADMIN_PASSWORD=your_password_to_manage_data
+```
+
+4. Run database migrations:
+```bash
+npm run db:push
+# or use drizzle-kit for migrations
+```
+
+5. Start the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+economy-analyzer/
+├── src/
+│   ├── app/                  # Next.js app router pages
+│   │   ├── page.tsx          # Home page
+│   │   ├── world-map/        # World map visualization
+│   │   ├── single-country/   # Single country analysis
+│   │   ├── country-comparison/ # Country comparison
+│   │   ├── tabular-view/     # Tabular data view
+│   │   └── data-management/  # Data management interface
+│   ├── components/           # Reusable components
+│   ├── db/                   # Database schema and configuration
+│   ├── services/             # API calls and data processing
+│   ├── lib/                  # Utility functions
+│   └── types/                # TypeScript type definitions
+├── components/               # Shadcn UI components
+└── drizzle/                  # Database migrations
+```
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
 
