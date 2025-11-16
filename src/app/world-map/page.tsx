@@ -41,6 +41,10 @@ Object.entries(COUNTRY_CODE_TO_NAME).forEach(([code, name]) => {
 type ValueType = "inflation" | "ppp" | "lcu" | "growth" | "difference"
 
 export default function WorldMapPage() {
+  useEffect(() => {
+    document.title = "Economy Analyzer - World Map"
+  }, [])
+
   const { resolvedTheme } = useTheme()
   const router = useRouter()
   const isDarkMode = resolvedTheme === "dark" || false

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import Link from "next/link"
 import { Globe2, Map, TrendingUp, Table2, GitCompare } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
@@ -37,6 +38,10 @@ const navigationCards = [
 ]
 
 export default function HomePage() {
+  useEffect(() => {
+    document.title = "Economy Analyzer"
+  }, [])
+
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-16">
@@ -106,7 +111,8 @@ export default function HomePage() {
 
         <div className="mt-16 text-center">
           <p className="text-sm text-muted-foreground">
-            Powered by comprehensive economic data from trusted sources
+            Web Intelligence WS25/26 <br />
+            Florian Wetzel
           </p>
         </div>
       </main>

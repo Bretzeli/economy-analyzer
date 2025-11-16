@@ -33,6 +33,10 @@ const COUNTRY_COLORS = [
 ]
 
 function CountryComparisonPageContent() {
+  useEffect(() => {
+    document.title = "Economy Analyzer - Country Comparison"
+  }, [])
+
   const searchParams = useSearchParams()
   const [selectedCountries, setSelectedCountries] = useState<CountryInfo[]>([])
   const [countries, setCountries] = useState<CountryInfo[]>([])

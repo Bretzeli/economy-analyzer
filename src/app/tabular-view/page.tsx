@@ -22,6 +22,10 @@ type SortConfig = {
 }
 
 export default function TabularViewPage() {
+  useEffect(() => {
+    document.title = "Economy Analyzer - Tabular View"
+  }, [])
+
   const [data, setData] = useState<TabularViewRow[]>([])
   const [countries, setCountries] = useState<CountryInfo[]>([])
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set())

@@ -20,6 +20,10 @@ import { type CountryInfo, type CountryTimeSeriesData } from "@/services/db-oper
 import { fetchAllCountries, fetchCountryTimeSeries, fetchAvailableTimestamps, fetchCountryRanking, fetchInflationRankingWithYearlyAverage } from "./actions"
 
 function SingleCountryPageContent() {
+  useEffect(() => {
+    document.title = "Economy Analyzer - Single Country"
+  }, [])
+
   const searchParams = useSearchParams()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
