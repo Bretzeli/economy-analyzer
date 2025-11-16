@@ -114,14 +114,28 @@ function SingleCountryPageContent() {
         startTransition(() => {
           setTimeSeriesData(timeSeries)
           setAvailableTimestamps(timestamps)
-          // Set default to newest year and month only if we haven't initialized from URL params
-          // We check if initializedFromUrl is true - if it is, we assume year was set from URL
-          if (timestamps.length > 0 && !initializedFromUrl) {
+          // Set default to newest year and month if year is not already set
+          // This handles the case where we go directly to the page without a year in URL
+          if (timestamps.length > 0) {
             const newest = timestamps[0]
             const year = newest.length >= 4 ? newest.substring(0, 4) : newest
             const month = newest.length === 7 ? newest.substring(5, 7) : ""
-            setSelectedYear(year)
-            setSelectedMonth(month)
+            
+            setSelectedYear(currentYear => {
+              // Only set if year is not already set
+              if (!currentYear) {
+                return year
+              }
+              return currentYear
+            })
+            setSelectedMonth(currentMonth => {
+              // Only set if we're also setting the year (i.e., current month is empty)
+              // We check currentYear inside the year setter, so we'll set month when year was empty
+              if (!currentMonth && month) {
+                return month
+              }
+              return currentMonth
+            })
           }
           setLoading(false)
         })
