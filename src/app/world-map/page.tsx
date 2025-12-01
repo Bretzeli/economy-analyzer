@@ -469,10 +469,10 @@ export default function WorldMapPage() {
       <div className="container mx-auto px-4 py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-primary/10">
-            <Globe className="h-8 w-8 text-primary" />
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+            <Globe className="h-8 w-8 text-blue-500" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
             World Map
           </h1>
         </div>

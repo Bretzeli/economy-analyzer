@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import Link from "next/link"
-import { Globe2, Map, TrendingUp, Table2, GitCompare } from "lucide-react"
+import { Globe2, Map, TrendingUp, Table2, GitCompare, Bot } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
 import { Button } from "@/components/shadcn/button"
 
@@ -34,6 +34,13 @@ const navigationCards = [
     href: "/tabular-view",
     icon: Table2,
     gradient: "from-green-500 to-emerald-500",
+  },
+  {
+    title: "AI Assistant",
+    description: "Ask questions about inflation and income data using our intelligent chatbot.",
+    href: "/ai-assistant",
+    icon: Bot,
+    gradient: "from-violet-500 to-fuchsia-500",
   },
 ]
 

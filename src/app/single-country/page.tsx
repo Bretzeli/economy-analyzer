@@ -411,10 +411,10 @@ function SingleCountryPageContent() {
         {/* Header with Search */}
         <div className="space-y-4 pt-2">
           <div className="flex items-center gap-3 pb-2">
-            <div className="p-3 rounded-2xl bg-primary/10">
-              <TrendingUp className="h-8 w-8 text-primary" />
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+              <TrendingUp className="h-8 w-8 text-purple-500" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent pb-1">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent pb-1">
               Single Country Analysis
             </h1>
           </div>
