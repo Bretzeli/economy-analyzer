@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, startTransition } from "react"
-import { ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square, ChevronLeft, ChevronRight, Table2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/shadcn/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select"
 import { Checkbox } from "@/components/shadcn/checkbox"
@@ -274,11 +274,18 @@ export default function TabularViewPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold">Tabular View</h1>
-          <p className="text-muted-foreground">
-            View and filter economic data in a comprehensive table format
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20">
+            <Table2 className="h-8 w-8 text-green-500" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+              Tabular View
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              View and filter economic data in a comprehensive table format
+            </p>
+          </div>
         </div>
 
         {/* Filters */}

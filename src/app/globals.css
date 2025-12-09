@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -120,3 +121,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom table styles for markdown */
+.prose table {
+  @apply w-full border-collapse text-sm my-3;
+}
+
+.prose thead {
+  @apply border-b-2 border-border;
+}
+
+.prose th {
+  @apply px-3 py-2 text-left font-semibold bg-muted/50;
+}
+
+.prose td {
+  @apply px-3 py-2 border-b border-border;
+}
+
+.prose tr:last-child td {
+  @apply border-b-0;
+}
+
+.prose tbody tr:hover {
+  @apply bg-muted/30;
+}
+

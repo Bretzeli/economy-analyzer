@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Globe2, TrendingUp, GitCompare, Table2, Moon, Sun } from "lucide-react"
+import { Home, Globe2, TrendingUp, GitCompare, Table2, Moon, Sun, Bot } from "lucide-react"
 import { Button } from "@/components/shadcn/button"
 import { SidebarTrigger } from "@/components/shadcn/sidebar"
 import { cn } from "@/lib/utils"
@@ -29,6 +29,11 @@ const navigationItems = [
     label: "Tabular view",
     href: "/tabular-view",
     icon: Table2,
+  },
+  {
+    label: "AI Assistant",
+    href: "/ai-assistant",
+    icon: Bot,
   },
 ]
 
